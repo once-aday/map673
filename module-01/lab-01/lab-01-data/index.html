@@ -83,16 +83,16 @@
 
 <body>
     <header>
-        <h1>Map Title</h1>
-        <h2>Map Subtitle</h2>
+        <h1>Home Rentals in Kentucky</h1>
+        <h2>Percentage of homes occupied by renters in KY Counties</h2>
     </header>
 
     <div id='map'></div>
 
     <footer>
-        <p>Map authored by YOUR NAME</p>
-        <p>Additional information about the data and map goes here.</p>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis urna magna, maximus nec laoreet sit amet, dictum ultricies nibh. Ut id auctor lacus. Nam a dolor et justo luctus luctus. Duis a elit eget risus dictum vehicula id eu elit. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed sed enim nisl. Vestibulum commodo imperdiet lacus, sed facilisis erat placerat sit amet. Nulla consequat malesuada neque eget aliquet. Integer non convallis nisl, gravida ultrices ex. Fusce nec vestibulum elit. Sed elementum lectus ipsum, vulputate elementum ex laoreet a. Aenean eu ex varius, varius felis vitae, efficitur nulla. Quisque pretium laoreet ante, in sodales dui vehicula at. Mauris eu sem sapien.
+        <p>Map authored by Devi nRocco</p>
+        <p>Data Source:</p>
+        <p>American Fact Finder(http://factfinder.census.gov/); 2010 Census, SF1
         </p>
     </footer>
 
@@ -138,7 +138,9 @@
             legend.onAdd = function () {
                 var div = L.DomUtil.create('div', 'legend');
                 
-                div.innerHTML = "<h3>" + attribute + " per " + norm + "</h3>";
+                div.innerHTML = "<h3>" + "Rentals per Occupied Home" + "</h3>";
+                
+//                div.innerHTML = "<h3>" + attribute + " per " + norm + "</h3>";
                 
                 for (var i = 0; i < breaks.length; i++) {
                     
@@ -164,9 +166,9 @@
                     });
                     
                     rent_per = layer.feature.properties[attribute]/layer.feature.properties[norm]*100
-                    console.log(layer)
+//                    console.log(layer)
                     
-                    var popupContent =  "<b>" + layer.feature.properties["NAME"]  + "</b><br>" + " Rented Homes: " + rent_per.toFixed(2) + "%"
+                    var popupContent =  "<b>" + layer.feature.properties["NAME"]  + " County " + "</b><br>" + " Rented Homes: " + rent_per.toFixed(2) + "%"
                     
                     
                     layer.bindPopup(popupContent)
