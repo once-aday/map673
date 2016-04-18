@@ -107,8 +107,8 @@
         map.addControl( L.control.zoom({ position: 'topright' }));
         
         var dataLayer,
-            attribute = "OWNED_MORT",
-            norm = "OWNER";
+            attribute = "RENTER", //Changed from OWNED_MORT
+            norm = "OCCUPIED"; // Changed from OWNER
 
         $.getJSON("ky_counties_housing.json", function(data) {
 
@@ -162,6 +162,14 @@
                     layer.setStyle({
                         fillColor: getColor(layer.feature.properties[attribute]/layer.feature.properties[norm], breaks)
                     });
+                    
+                    rent_per = layer.feature.properties[attribute]/layer.feature.properties[norm]*100
+                    console.log(layer)
+                    
+                    var popupContent =  "<b>" + layer.feature.properties["NAME"]  + "</b><br>" + " Rented Homes: " + rent_per.toFixed(2) + "%"
+                    
+                    
+                    layer.bindPopup(popupContent)
                 });
                 drawLegend(breaks);
 
