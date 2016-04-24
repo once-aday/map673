@@ -103,8 +103,8 @@
 
 <body>
     <header>
-        <h1>Map Title</h1>
-        <h2>Map Subtitle</h2>
+        <h1>Counties of Kentucky: Vacant Housing</h1>
+        <h2>Percentage of Homes for Rent, Sale, &amp; Used Seasonally or Recreationally</h2>
     </header>
     
     <div id='ui-controls'>
@@ -119,14 +119,15 @@
     <div id='map'></div>
 
     <footer>
-        <p>Map authored by YOUR NAME</p>
-        <p>Additional information about the data and map goes here.</p>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis urna magna, maximus nec laoreet sit amet, dictum ultricies nibh. Ut id auctor lacus. Nam a dolor et justo luctus luctus. Duis a elit eget risus dictum vehicula id eu elit. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed sed enim nisl. Vestibulum commodo imperdiet lacus, sed facilisis erat placerat sit amet. Nulla consequat malesuada neque eget aliquet. Integer non convallis nisl, gravida ultrices ex. Fusce nec vestibulum elit. Sed elementum lectus ipsum, vulputate elementum ex laoreet a. Aenean eu ex varius, varius felis vitae, efficitur nulla. Quisque pretium laoreet ante, in sodales dui vehicula at. Mauris eu sem sapien.
+        <p>Map authored by Devin Rocco</p>
+        <p>Data Source:</p>
+        <p>American Fact Finder(http://factfinder.census.gov/); 2010 Census, SF1
         </p>
     </footer>
 
     <script>
         
+        // Label dictionary for common names of data fields
         var labels = {
             "VACANT": "Total Vacant Units",
             "VACANT_FOR": "Vacant Housing Units for Rent",
@@ -134,7 +135,7 @@
             "VACANT_SEA": "Vacant Housing Units used Seasonally or for Recreation",
             "NORM": "Total Vacant Homes"
         }
-        
+        // Options and settings for initial Leaflet map
         var options = {
             center: [38.2, -85.8],
             zoom: 7.4,
@@ -144,16 +145,20 @@
             zoomControl: false
         }
         
+        // Initiate leaflet map with options as variable map
         var map = L.map('map', options);
         
+        // Create a zoom element in the topright of the map
         map.addControl( L.control.zoom({ position: 'topright' }));
         
-        var dataLayer,
-            attribute = "VACANT_FOR",
-            norm = "VACANT";
+        var dataLayer, // declare global variable for map elements
+            attribute = "VACANT_FOR", // set initial attribute for use in statistics
+            norm = "VACANT"; // set normalization variable for data
         
+        // Use jquery to read in a .json data file and apply a function on that data
         $.getJSON("ky_counties_housing.json", function(data) {
             
+        /*             Use jquery processed json data to create a new variable, var dataLayer, that reads in the JSON data via Leaflet and sets initial style settings to features displayed on the leaflet map. Finally adds the data to the map.*/
             dataLayer = L.geoJson(data, {
                  style: function(feature) {
                     return {
@@ -165,62 +170,70 @@
                 }          
             }).addTo(map);
             
-            
-            drawInfo();
-            drawLegend();
-            drawMap();
-            buildUI();
-
+            drawInfo(); // Create content and display info window 
+            drawLegend(); // Create and draw legend into Leaflet map window
+            drawMap(); // Draw map visualizations of JSON features into leaflet map
+            buildUI(); // Enables interactive functionality for HTML data-display drop down menu and interconectivity with Leaflet map
               
         });
         
+        // Draw map visualizations of JSON features into leaflet map
         function drawMap() {
             
-            var breaks = getClassBreaks();
+            var breaks = getClassBreaks(); // Get class breaks of json data
 
+            // Cycle through all layers (polygons) within overall json dataset and perform customized data visualization function
             dataLayer.eachLayer(function(layer) {
                 
-                var props = layer.feature.properties;
+                var props = layer.feature.properties; //  declare props variable as a container for data for each layer
                 
+                // Set layer style (color) based on currently declared attribute (normalized), and where in the breaks division the normalized value falls
                 layer.setStyle({
                     fillColor: getColor(props[attribute]/
                                         props[norm], breaks)
                 });
+                //Create popup by deriving the name, normalized value of current data attribute of interest, and formatting text.
                 layer.bindPopup("<b>"+layer.feature.properties["NAME"]+" County</b></br>" +
                                 labels[attribute] + ": <br>" + ((layer.feature.properties[attribute]/
                                         layer.feature.properties[norm])*100).toLocaleString() + "%");
+                
+                // Color stroke of polygon layer yellow when user hovers over (leaflet method)
                 layer.on('mouseover', function() {
                     updateInfo(this);
                     layer.setStyle({
                         color: 'yellow'
                     })
-                    
-                layer.on('mouseout', function() {
-                    layer.setStyle({
-                        color: '#dddddd'
+                // Return stroke color to grey when user moves pointer off of polygon layer (leaflet method)    
+                    layer.on('mouseout', function() {
+                        layer.setStyle({
+                            color: '#dddddd'
+                        })
                     })
-                })
-
                 });
+                
+                // Execute jquery selector and .show() metho to show info window when user hovers over polygon layer (Leaflet method on layer, jquery function executed within Leaflet function)
                 dataLayer.on('mouseover', function() {
                     $(".info").show();
 
                 });
+                
+                // Execute jquery selector and .hide() method to hide info window when user moved pointer off of polygon layer (Leaflet method on layer, jquery function executed within Leaflet function)
                 dataLayer.on('mouseout', function() {
                     $(".info").hide();
                 });
                 
             });
             
-
+            // Update the legend to reflect new data attribute values
             updateLegend(breaks);
         }
         
-        
+        // Function to draw initial info box
         function drawInfo() {
 
-            var info = L.control({position: 'topright'});
+            var info = L.control({position: 'topright'}); // Create initial info box in top right corner of map
 
+            // Create a div element for the info box called 'info' and return it
             info.onAdd = function(map) {
 
                 var div = L.DomUtil.create('div', 'info');
@@ -228,30 +241,32 @@
                 return div;  
 
             }
-            info.addTo(map);
-            $(".info").hide();
+            info.addTo(map); // add info window to the Leaflet map
+            $(".info").hide(); // Intially hide the info window so it only displays when a user first hovers over a layer polygon
         }
 
-        
+        // Function to return class breaks / data divisions for use in analyzing and visiaulizing data
         function getClassBreaks() {
             
-            var values = [];
+            var values = []; // empty array to store values from dataset
             
+            // Add normalized values to values array (of current attribute of interest) by looping through features
             dataLayer.eachLayer(function(layer) {
                 var value = layer.feature.properties[attribute]/layer.feature.properties[norm];
                 values.push(value);   
             }); 
            
-            var clusters = ss.ckmeans(values, 5);
+            var clusters = ss.ckmeans(values, 5); // Use simple statistics package to compute 5-class breaks using ckmeans algorithm
 
             var breaks = clusters.map(function(cluster){
                 return [cluster[0],cluster.pop()];   
-            });
+            }); // Use javascript map metho to create array of array of class break divisions
 
-            return breaks;
+            return breaks; // return array of array of class break divisions
             
         }   
         
+        // Function to return color vlaues based on where within the class breaks feature data (d) is within
         function getColor(d, breaks) {
             
             if(d <= breaks[0][1]) {
@@ -267,12 +282,13 @@
             }
         }
         
+        // Function to update the legend based on new attributes chosen by the user
         function updateLegend(breaks) {
             
-            var legend = $('.legend').html("<h3>" + labels[attribute] + "</h3><ul>");;
+            // Use jquery to select legend HTML element and push html to display formatted legend title
+            var legend = $('.legend').html("<h3>" + labels[attribute] + "<br>Per " + labels[norm] + "</h3>");
             
-            legend.html("<h3>" + labels[attribute] + "<br>Per " + labels[norm] + "</h3>"); 
-
+            // Set colors and values within legend based on class breaks, additionally format legend text
             for (var i = 0; i <= breaks.length-1; i++) {
 
                 var color = getColor(breaks[i][0], breaks);
@@ -284,64 +300,46 @@
             }         
         }
         
+        // Function to update the info window/box with data mathching the current attribute's specifications when a user changes the attribute
+        
         function updateInfo(layer) {
 
-            var props = layer.feature.properties;
+            var props = layer.feature.properties; // grab data from current attribute layer
 
+            // Format info window
             var html = "<h3>"+props['NAME']+" County</h3>"+
                         "total vacant housing units for rent: <b>"+ props["VACANT"]+"</b><br>"+
                         "# owned for rent: <b>"+ props["VACANT_FOR"]+"</b><br>"+
                         "# owned for sale: <b>"+ props["VACANT_FO2"]+"</b><br>"+
                         "# used seasonally or recreationally: <b>"+ props["VACANT_SEA"]+"</b>"
 
-            $(".info").html(html);
+            $(".info").html(html); // Push html data for info window using jquery selector and html() method
         }
         
-        
+        // Function to initially draw a legend within the Leaflet map
         function drawLegend(breaks) {
             
-            var legend = L.control({position: 'topleft'});
+            var legend = L.control({position: 'topleft'}); // Create legend window for Leaflet to use and recognize
 
-            legend.onAdd = function () {
-                
+            // Create a div, 'legend', when a legend is added to the Leaflet map and return it
+            legend.onAdd = function () {            
                 var div = L.DomUtil.create('div', 'legend');
-                
-                
-                
-//                div.innerHTML = "<h3>" + attribute + " per " + norm + "</h3>"; 
-            
-
-//                for (var i = 0; i < breaks.length; i++) {
-//            
-//                    var color = getColor(breaks[i][0], breaks);
-//                    
-//                    div.innerHTML +=
-//                        '<span style="background:' + color + '"></span> ' +
-//                        '<label>'+(breaks[i][0]*100).toLocaleString() + ' &mdash; ' + 
-//                        (breaks[i][1]*100).toLocaleString() + '</label>';
-//                }
-               
                 return div;
-                
-                    
             };
 
-            legend.addTo(map);
+            legend.addTo(map); // Add legend element to Leaflet map
         }
         
+        // Function to enable interactive functionality for HTML data-display drop down menu and interconectivity with Leaflet map
         function buildUI() {
             
-            $('select[id="occupied"]').change(function() {
+            $('select[id="occupied"]').change(function() { // jquery selection of html selector with id of "occupied", a function is executed when the jquery method .change() is triggered (when a user chooses a new data attribute via the html selector drop-down menu)
 
-            // code executed here when change event occurs
-            attribute = $(this).val();
+            attribute = $(this).val(); // declares the value of variable attribute as the value of the selected attribute returned when the .change function is triggered by the user
             
-            drawMap();
+            drawMap(); // Re-draws the map based on the new attribute selected
 
-        });
-            
-            
-            
+            });
         }
 
     </script>
