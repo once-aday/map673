@@ -49,6 +49,17 @@
             font-size: 1em;
             color: #001323;
         }
+        .info {
+            padding: 6px 8px;
+            font-size: 1em;
+            background: rgba(255,255,255,0.8);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px;
+            text-align: right;   
+        }
+        .info h3 {
+            margin: 0;   
+        }
         .legend {
             padding: 6px 8px;
             font-size: 1em;
@@ -78,6 +89,13 @@
         }
         .leaflet-popup-content {
             max-width: 160px;   
+        }
+        #ui-controls {   
+            margin-left: 10%;
+        }
+        #ui-controls label {
+            font-size: 1em;
+            margin-right: 5px;
         }
         
     </style>
@@ -109,11 +127,22 @@
 
     <script>
         
+        var labels = {
+            "OCCUPIED": "occupied units",
+            "OWNED_MORT": "% occupied housing units owned with mortgage",
+            "OWNED_FREE": "% occupied housing units owned free and clear",
+            "RENTER": "% occupied housing units rented"   
+        }
+        
         var options = {
-            center: [37.8, -85.8],
+            center: [38.2, -85.8],
             zoom: 7.4,
+            minZoom: 7.4,
+            maxZoom: 7.4,
+            dragging: false,
             zoomControl: false
         }
+        
         var map = L.map('map', options);
         
         map.addControl( L.control.zoom({ position: 'topright' }));
@@ -135,7 +164,12 @@
                 }          
             }).addTo(map);
             
+            
+            drawInfo();
+            drawLegend();
             drawMap();
+            buildUI();
+
               
         });
         
@@ -151,13 +185,41 @@
                     fillColor: getColor(props[attribute]/
                                         props[norm], breaks)
                 });
-                layer.bindPopup("<b>"+props["NAME"]+" County</b></br>" +
-                                attribute + ": " +
-                                ((props[attribute]/props[norm])*100).toLocaleString()+"%");  
+                layer.bindPopup("<b>"+layer.feature.properties["NAME"]+" County</b></br>" +
+                                labels[attribute] + ": " + ((layer.feature.properties[attribute]/
+                                        layer.feature.properties[norm])*100).toLocaleString());
+                layer.on('mouseover', function() {
+                    updateInfo(this);
+                });
+                dataLayer.on('mouseover', function() {
+                    $(".info").show();
+                });
+                dataLayer.on('mouseout', function() {
+                    $(".info").hide();    
+                });
+                
             });
             
-            drawLegend(breaks);
+
+            updateLegend(breaks);
         }
+        
+        
+        function drawInfo() {
+
+            var info = L.control({position: 'topright'});
+
+            info.onAdd = function(map) {
+
+                var div = L.DomUtil.create('div', 'info');
+
+                return div;  
+
+            }
+            info.addTo(map);
+            $(".info").hide();
+        }
+
         
         function getClassBreaks() {
             
@@ -193,6 +255,37 @@
             }
         }
         
+        function updateLegend(breaks) {
+            
+            var legend = $('.legend').html("<h3>" + labels[attribute] + "</h3><ul>");;
+            
+            legend.html("<h3>" + attribute + " per " + norm + "</h3>"); 
+
+            for (var i = 0; i <= breaks.length-1; i++) {
+
+                var color = getColor(breaks[i][0], breaks);
+
+                legend.append(
+                    '<span style="background:' + color + '"></span> ' +
+                    '<label>'+(breaks[i][0]*100).toLocaleString() + ' &mdash; ' + 
+                    (breaks[i][1]*100).toLocaleString() + '</label>');
+            }         
+        }
+        
+        function updateInfo(layer) {
+
+            var props = layer.feature.properties;
+
+            var html = "<h3>"+props['NAME']+" County</h3>"+
+                        "total # occupied units: <b>"+ props["OCCUPIED"]+"</b><br>"+
+                        "# owned with mortgage or loan: <b>"+ props["OWNED_MORT"]+"</b><br>"+
+                        "# owned free and clear: <b>"+ props["OWNED_FREE"]+"</b><br>"+
+                        "# occupied by renters: <b>"+ props["RENTER"]+"</b>"
+
+            $(".info").html(html);
+        }
+        
+        
         function drawLegend(breaks) {
             
             var legend = L.control({position: 'topleft'});
@@ -201,17 +294,20 @@
                 
                 var div = L.DomUtil.create('div', 'legend');
                 
-                div.innerHTML = "<h3>" + attribute + " per " + norm + "</h3>"; 
-
-                for (var i = 0; i < breaks.length; i++) {
+                
+                
+//                div.innerHTML = "<h3>" + attribute + " per " + norm + "</h3>"; 
             
-                    var color = getColor(breaks[i][0], breaks);
-                    
-                    div.innerHTML +=
-                        '<span style="background:' + color + '"></span> ' +
-                        '<label>'+(breaks[i][0]*100).toLocaleString() + ' &mdash; ' + 
-                        (breaks[i][1]*100).toLocaleString() + '</label>';
-                }
+
+//                for (var i = 0; i < breaks.length; i++) {
+//            
+//                    var color = getColor(breaks[i][0], breaks);
+//                    
+//                    div.innerHTML +=
+//                        '<span style="background:' + color + '"></span> ' +
+//                        '<label>'+(breaks[i][0]*100).toLocaleString() + ' &mdash; ' + 
+//                        (breaks[i][1]*100).toLocaleString() + '</label>';
+//                }
                
                 return div;
                 
@@ -219,6 +315,21 @@
             };
 
             legend.addTo(map);
+        }
+        
+        function buildUI() {
+            
+            $('select[id="occupied"]').change(function() {
+
+            // code executed here when change event occurs
+            attribute = $(this).val();
+            
+            drawMap();
+
+        });
+            
+            
+            
         }
 
     </script>
