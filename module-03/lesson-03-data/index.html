@@ -65,9 +65,9 @@
         
         // load map tiles and add to map
         
-        var Thunderforest_SpinalMap = L.tileLayer('http://{s}.tile.thunderforest.com/spinal-map/{z}/{x}/{y}.png', {
+        var Thunderforest_TransportDark = L.tileLayer('http://{s}.tile.thunderforest.com/transport-dark/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="http://www.thunderforest.com/">Thunderforest</a>, &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-            maxZoom: 11
+            maxZoom: 19
         }).addTo(map);
 
                 
@@ -80,21 +80,16 @@
         $.getJSON("us-states.json", function(states) {
 
             Papa.parse('states-unemployment.csv', {
-
                 download: true,
                 header: true,
                 complete: function(data) {
 
-                    // data is accessible to us here
-                    console.log(data);
-
-                    // note that states is also accessible here!
-                    console.log(states);
+                    processData(states, data);
 
                 }
-            }); // end of Papa.parse() 
+            });
 
-        });  // end of $.getJSON()
+        });
 
         // function to draw the map
         
