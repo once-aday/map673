@@ -42,13 +42,65 @@
         p {
             font-size: 1em;
             color: #001323;
-        }   
+        }
+        .legend {
+            padding: 6px 8px;
+            font-size: 1em;
+            background: rgba(255,255,255,0.8);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px;
+        }
+        .legend h3 {
+            font-size: 1.1em;
+            font-weight: normal;
+            color: #001323;
+            margin: 0 0 10px 0;
+        }
+        .legend ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 12px 4px 0;
+        }
+        .legend li {
+            height: 22px;
+        }
+        .legend span {
+            width: 30px;
+            height: 20px;
+            float: left;
+            margin-right: 10px;
+        }
+        #ui-controls {
+            width: 176px;   
+            padding: 8px 15px 8px 15px;
+            background: rgba(75,75,75,0.8);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px; 
+            color: whitesmoke;
+        }
+        .year-slider {
+            width: 100%;
+        }
+        #ui-controls .min {
+            float: left;   
+        }
+        #ui-controls .max {
+            float: right;
+        }
+        label {
+            font-size: 1.1em;
+            font-weight: bold;
+        }
     </style>
 </head>
 
 <body>
-    <h1>Map Title Goes Here</h1>
-    <div id='map'></div>
+    <h1>US Unemployment Rates By State</h1>
+    <div id="map"></div>
+    <div id="ui-controls">
+        <input type="range" min="2001", max="2013", 
+                value="2001", step="1" class='year-slider'>
+    </div>
     
     <script>
         
@@ -73,19 +125,10 @@
                 
         // declare global variables
         
-        // Label dictionary for common names of data fields
-        var labels = {
-            "VACANT": "Total Vacant Units",
-            "VACANT_FOR": "Vacant Housing Units for Rent",
-            "VACANT_FO2": "Vacant Housing Units for Sale",
-            "VACANT_SEA": "Vacant Housing Units used Seasonally or for Recreation",
-            "NORM": "Total Vacant Homes"
-        }
+        var dataLayer; // declare global variable for map elements
+        var attribute = "2001" // set initial attribute for use in statistics
+//            norm = "STATE_FIP"; // set normalization variable for data
         
-        
-        var dataLayer, // declare global variable for map elements
-            attribute = "2001", // set initial attribute for use in statistics
-            norm = "STATE_FIP"; // set normalization variable for data
         
         $.getJSON("us-states.json", function(states) {
 
@@ -94,22 +137,8 @@
                 header: true,
                 complete: function(data) {
 
-//                    processData(states, data);
-                    dataLayer = L.geoJson(processData(states, data), {
-                        style: function(feature) {
-                            return {
-                                    color: '#dddddd',
-                                    weight: 2,
-                                    fillOpacity: 1,
-                                    fillColor: '#1f78b4'
-                                };
-                        }  
-                    }).addTo(map);
-                                          
-                    drawLegend();
-                    drawMap();
-                    
-                                            
+                    processData(states, data);
+              
                 }
             });
 
@@ -133,157 +162,170 @@
                 } // inner for loop is complete
 
             } // outer for loop is complete
-            console.log(states);
-            return states
+//            console.log(states);
+            
+
+            
+            drawMap(states);
+            createSliderUI();
         }
+
 
         // function to draw the map
         
-        function drawMap() {
+        function drawMap(states) {
+            dataLayer = L.geoJson(states, {
+                style: function(feature) {
+//                    console.log(feature);
+                    return {
+                        color: '#383838',
+                        weight: 1,
+                        fillOpacity: 1,
+                        fillColor: '#1f78b4'
+                    }
+                }
+            }).addTo(map)
             
-            var breaks = getClassBreaks(); // Get class breaks of json data
-
-            // Cycle through all layers (polygons) within overall json dataset and perform customized data visualization function
-            dataLayer.eachLayer(function(layer) {
-                
-                var props = layer.feature.properties; //  declare props variable as a container for data for each layer
-                
-                // Set layer style (color) based on currently declared attribute (normalized), and where in the breaks division the normalized value falls
-                layer.setStyle({
-//                    console.log(props[attribute]/props[norm]);
-                    
-                    fillColor: getColor(props[attribute]/props[norm], breaks)
-                });
-                //Create popup by deriving the name, normalized value of current data attribute of interest, and formatting text.
-//                layer.bindPopup("<b>"+layer.feature.properties["NAME"]+" County</b></br>" +
-//                                labels[attribute] + ": <br>" + ((layer.feature.properties[attribute]/
-//                                        layer.feature.properties[norm])*100).toLocaleString() + "%");
-//                
-                // Color stroke of polygon layer yellow when user hovers over (leaflet method)
-                layer.on('mouseover', function() {
-                    updateInfo(this);
-                    layer.setStyle({
-                        color: 'yellow'
-                    })
-                // Return stroke color to grey when user moves pointer off of polygon layer (leaflet method)    
-                    layer.on('mouseout', function() {
-                        layer.setStyle({
-                            color: '#dddddd'
-                        })
-                    })
-                });
-                
-                // Execute jquery selector and .show() metho to show info window when user hovers over polygon layer (Leaflet method on layer, jquery function executed within Leaflet function)
-                dataLayer.on('mouseover', function() {
-                    $(".info").show();
-
-                });
-                
-                // Execute jquery selector and .hide() method to hide info window when user moved pointer off of polygon layer (Leaflet method on layer, jquery function executed within Leaflet function)
-                dataLayer.on('mouseout', function() {
-                    $(".info").hide();
-                });
-                
-            });
+            var breaks = getClassBreaks();
+            drawLegend(breaks)
+            updateMap()
             
-            // Update the legend to reflect new data attribute values
-            updateLegend(breaks);
         }
         
         // function to update the map
         
+        function updateMap() {
+            
+            var breaks = getClassBreaks();
+            
+            dataLayer.eachLayer(function(layer) {
+                layer.setStyle( {
+                    fillColor: getColor(Number(layer.feature.properties[attribute]), breaks)
+                })
+            });
+            
+            
+            
+            updateLegend(breaks);
+        }
+        
+        
         // function get the class breaks   
+        
         
         function getClassBreaks() {
             
-            var values = []; // empty array to store values from dataset
+            var values = [];
             
-            // Add normalized values to values array (of current attribute of interest) by looping through features
             dataLayer.eachLayer(function(layer) {
-//                console.log(layer)
-                var value = layer.feature.properties[attribute]/layer.feature.properties[norm];
-                values.push(value);   
-            }); 
-           
-            var clusters = ss.quantile(values, [0,0.2,0.4,0.6,0.8,1]); // Use simple statistics package to compute 5-class breaks using quantiles
+                var value = Number(layer.feature.properties[attribute])
+                values.push(value);
+            });
             
-            console.log(clusters);
-            breaks = []
-            
-            
-            for (i = 0; i < 6; i++) {
-                clusters[i].push(clusters[i+1])   
-            }
-            
-            
-//            var breaks = clusters.map(function(cluster){
-//                console.log(cluster)
-//                count = count + 1
-//                return [clusters[count-1],clusters[count]];
-//                
-//            });
-                
-                // Use javascript map method to create array of array of class break divisions
 
-            console.log(clusters)
-            return breaks; // return array of array of class break divisions
             
-        }   
-        
+            var breaks = ss.quantile(values, [0, 0.2, 0.4, 0.6, 0.8, 1]);
+            
+            
+            return breaks;
+        }
         
         // function to get the color value
         
-        // Function to return color vlaues based on where within the class breaks feature data (d) is within
         function getColor(d, breaks) {
             
-            if(d <= breaks[0][1]) {
+          if(d <= breaks[1]) {
                 return '#f1eef6';
-            } else if(d <= breaks[1][1]) {
+            } else if(d <= breaks[2]) {
                 return '#bdc9e1';
-            } else if(d <= breaks[2][1]) {
+            } else if(d <= breaks[3]) {
                 return '#74a9cf';
-            } else if(d <= breaks[3][1]) {
+            } else if(d <= breaks[4]) {
                 return '#2b8cbe'
-            } else if(d <= breaks[4][1]) {
+            } else if(d <= breaks[5]) {
                 return '#045a8d'
-            }
+            }            
         }
                 
         // function to draw the legend
         
         function drawLegend(breaks) {
+
+            // function code will go in here
+            console.log(breaks);
+            var legend = L.control({position: 'topleft'});
             
-            var legend = L.control({position: 'topleft'}); // Create legend window for Leaflet to use and recognize
-
-            // Create a div, 'legend', when a legend is added to the Leaflet map and return it
-            legend.onAdd = function () {            
+            legend.onAdd = function () {
                 var div = L.DomUtil.create('div', 'legend');
+                
+//                div.innerHTML = "<h3>" + "Rentals per Occupied Home" + "</h3>";
+                
+//                for (var i = 0; i < breaks.length; i++) {
+//                    
+//                    var color = getColor(breaks[i], breaks);
+//
+//                    div.innerHTML += '<span style="background:' + color + '"></span> ' + '<label>' + (breaks[i][0]*100).toLocaleString() + ' &mdash; ' + (breaks[i][1]*100).toLocaleString() + '</label>';
+//                }
+                
                 return div;
-            };
+            }; // end onAdd method
+            
+            legend.addTo(map);
 
-            legend.addTo(map); // Add legend element to Leaflet map
         }
-        
         // function to update the legend
         
         function updateLegend(breaks) {
             
             // Use jquery to select legend HTML element and push html to display formatted legend title
-            var legend = $('.legend').html("<h3>" + labels[attribute] + "<br>Per " + labels[norm] + "</h3>");
+            var legend = $('.legend').html("<h3>% Unemployment: " + attribute + "</h3><ul>");
             
             // Set colors and values within legend based on class breaks, additionally format legend text
-            for (var i = 0; i <= breaks.length-1; i++) {
+            for (var i = 0; i <= breaks.length-2; i++) {
 
-                var color = getColor(breaks[i][0], breaks);
-
-                legend.append(
-                    '<span style="background:' + color + '"></span> ' +
-                    '<label>'+(breaks[i][0]*100).toLocaleString() + '% &mdash; ' + 
-                    (breaks[i][1]*100).toLocaleString() + '%</label>');
-            }         
+                var color = getColor(breaks[i + 1], breaks);
+                $('.legend ul').append('<li><span style="background:' + color + '"> </span> ' + breaks[i] + ' &mdash; ' + breaks[i + 1] + '</li>');
+            }   
+            legend.append("</ul>");
         }
-
+        
         // function to create the range slider
+        
+        function createSliderUI() {
+            // create a Leaflet control object and store a reference to it in a variable
+            var sliderControl = L.control({ position: 'bottomleft'} );
+
+            // when we add this control object to the map
+            sliderControl.onAdd = function(map) {
+
+                // select an existing DOM element with an id of "ui-controls"
+                var slider = L.DomUtil.get("ui-controls");
+
+                    // when the user clicks on the slider element
+                    L.DomEvent.addListener(slider, 'mousedown', function(e) { 
+
+                        // prevent the click event from bubbling up to the map
+                        L.DomEvent.stopPropagation(e); 
+
+                    });
+
+                // return the slider from the onAdd method
+                return slider;
+                
+            }
+
+            // add the control object containing our slider element to the map
+            sliderControl.addTo(map);
+            
+            $(".year-slider")
+                .on('input change', function() {
+//                    console.log($(this).val())
+                    attribute = $(this).val();
+                    updateMap();
+                });
+            
+            
+        }
 
     </script>
     
