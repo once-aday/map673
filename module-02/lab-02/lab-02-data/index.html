@@ -66,6 +66,7 @@
             background: rgba(255,255,255,0.8);
             box-shadow: 0 0 15px rgba(0,0,0,0.2);
             border-radius: 5px;
+            max-width: 230px;
         }
         .legend h3 {
             font-size: 1.1em;
@@ -149,7 +150,7 @@
         var map = L.map('map', options);
         
         // Create a zoom element in the topright of the map
-        map.addControl( L.control.zoom({ position: 'topright' }));
+//        map.addControl( L.control.zoom({ position: 'topright' }));
         
         var dataLayer, // declare global variable for map elements
             attribute = "VACANT_FOR", // set initial attribute for use in statistics
