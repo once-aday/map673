@@ -22,12 +22,13 @@
             font-family: Lato, sans-serif;
             color: #0D0000;
         }
-        header {
-            padding: 6px 10%;
-        }
         h1 {
+            position: absolute;
+            top: 10p;
+            left: 40px;
             padding: 8px 15px;
-            margin: 0; 
+            margin: 0;
+            z-index: 100;
         }
         #map {
             position: absolute;
@@ -49,7 +50,9 @@
             background: rgba(255,255,255,0.8);
             box-shadow: 0 0 15px rgba(0,0,0,0.2);
             border-radius: 5px;
-            text-align: right;   
+            text-align: right; 
+            width: 100px;
+            display: none;
         }
         .info h3 {
             margin: 0;   
@@ -109,8 +112,10 @@
     <h1>Kentucky Unemployment Rates By County</h1>
     <div id="map"></div>
     <div id="ui-controls">
+        <label><span class="min">2000</span><span class="max">2013</span>
         <input type="range" min="2000", max="2013", 
                 value="2000", step="1" class='year-slider'>
+        </label>
     </div>
     
     <script>
@@ -266,7 +271,7 @@
             });    
             
             updateLegend(breaks);
-            updateInfo(dataLayer);
+            
         }
         
         
@@ -328,17 +333,31 @@
         
         // Function to update the info window/box with data mathching the current attribute's specifications when a user changes the attribute
         
-        function updateInfo(dataLayer) {
-            console.log(dataLayer.feature)
+        function updateInfo(layer) {
+//            console.log(dataLayer.feature)
 
-            //var props = dataLayer.feature.properties["NAME"]; // grab data from current attribute layer
+            var props = layer.feature.properties; // grab data from current attribute layer
 
             //console.log(props)
             // Format info window
-            var html = "test"
-            //var html = "<h3>"+props['NAME']+ " County</h3>" + "2000: <b>" + props["2000"]
+            var html ="<h3>"+ props.NAME + " County</h3>";
 
-            $(".info").html(html); // Push html data for info window using jquery selector and html() method
+            // get a list of the object keys
+            var keys = Object.keys(props);
+
+            // sort these strings low to high
+            keys.sort();
+
+            // loop through the array of prop keys
+            keys.forEach(function(key) {
+                // if that key can be converted to a Number (is true)
+                if(Number(key)) {
+                    // concatenate the new line to our output html
+                    html += key + ": <b>"+ props[key]+"</b><br>"
+                }
+            });
+
+            $(".info").html(html)
         }
         
         
